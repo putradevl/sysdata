@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sistem Produksi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+
+        .menu-btn {
+            position: fixed;
+            top: 15px;
+            left: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1001;
+            color: #333;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+
+        .menu-btn .icon-close {
+            display: none;
+        }
+
+        .menu-btn.open .icon-hamburger {
+            display: none;
+        }
+
+        .menu-btn.open .icon-close {
+            display: block;
+        }
+
+        .menu-btn.open {
+            transform: rotate(180deg);
+        }
+
+        .sidebar {
+            height: 100%;
+            width: 280px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #ffffff;
+            z-index: 1000;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+            overflow-y: auto;
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-header h2 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .sidebar ul {
+            list-style-type: none;
+            padding: 15px 0;
+            margin: 0;
+        }
+
+        .sidebar ul li a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            text-decoration: none;
+            font-size: 1em;
+            color: #333;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .sidebar ul li a .fa-fw {
+            margin-right: 15px;
+            width: 20px;
+            text-align: center;
+            color: #555;
+        }
+
+        .sidebar ul li a:hover {
+            background-color: #f0f0f0;
+            color: #000;
+        }
+
+        .sidebar hr {
+            border: 0;
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 10px 20px;
+        }
+
+        .logout-btn {
+            margin: 20px;
+            padding: 12px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            width: calc(100% - 40px);
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .main-content {
+            padding: 80px 20px 20px 20px;
+            min-height: 100vh;
+        }
+
+        .welcome-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .welcome-section h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .welcome-section p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-card i {
+            font-size: 36px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-card h3 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .online-users-section, .activity-logs-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .online-badge {
+            background: #28a745;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .users-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .user-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-info .username {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+        }
+
+        .user-info .status {
+            font-size: 12px;
+            color: #28a745;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #28a745;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+        }
+
+        .activity-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 15px;
+            transition: background 0.2s;
+        }
+
+        .activity-item:hover {
+            background: #f8f9fa;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .activity-icon.login {
+            background: #e7f4e8;
+            color: #28a745;
+        }
+
+        .activity-icon.logout {
+            background: #f8d7da;
+            color: #dc3545;
+        }
+
+        .activity-icon.navigation {
+            background: #e7f3ff;
+            color: #007bff;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-content .username {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+        }
+
+        .activity-content .description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+
+        .activity-content .time {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .menu-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+            color: #333;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .menu-card i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .menu-card h3 {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .menu-card p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .refresh-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .refresh-btn:hover {
+            background: #0056b3;
+        }
+
+ /* Sidebar header */
+#sidebar .sidebar-header{
+ padding-bottom:54px;
+ transform:translatex(0px) translatey(0px);
+}
+
+/* User greeting */
+#userGreeting{
+ position:relative;
+ top:34px;
+}
+
+/* User email */
+#userEmail{
+ position:relative;
+ top:29px;
+}
+
+/* Overlay */
+#overlay{
+ transform:translatex(0px) translatey(0px);
+}
+
+/* Main content */
+.main-content{
+ transform:translatex(0px) translatey(0px);
+}
+
+@media (max-width:768px){
+
+ /* Sidebar header */
+ #sidebar .sidebar-header{
+  padding-bottom:65px;
+  transform:translatex(0px) translatey(0px);
+ }
+ 
+ /* User greeting */
+ #userGreeting{
+  position:relative;
+  top:47px;
+ }
+ 
+ /* User email */
+ #userEmail{
+  position:relative;
+  top:43px;
+ }
+ 
+}
+
+
+@media (max-width:768px){
+    .menu-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+    }
+
+    .menu-card {
+        padding: 15px;
+    }
+
+    .menu-card i {
+        font-size: 28px;
+        margin-bottom: 8px;
+    }
+
+    .menu-card h3 {
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+
+    .menu-card p {
+        font-size: 12px;
+    }
+}
+
+@media (max-width:768px){
+    /* Grid untuk statistik */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .stat-card {
+        padding: 15px;
+    }
+
+    /* Kalau jumlah card ganjil, biar item terakhir ke tengah */
+    .stats-grid > :last-child:nth-child(odd) {
+        grid-column: span 2;
+        justify-self: center;
+        width: 70%; /* bisa disesuaikan misal 60% - 80% */
+    }
+
+    /* Grid untuk menu */
+    .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .menu-card {
+        padding: 15px;
+    }
+
+    /* Kalau jumlah card ganjil di menu, juga tengah */
+    .menu-grid > :last-child:nth-child(odd) {
+        grid-column: span 2;
+        justify-self: center;
+        width: 70%;
+    }
+}
+
+
+    </style>
+</head>
+<body>
+    <div class="menu-btn" id="menuBtn">
+        <i class="fa fa-bars icon-hamburger"></i>
+        <i class="fa fa-times icon-close"></i>
+    </div>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 id="userGreeting">Dashboard</h2>
+            <p id="userEmail">Loading...</p>
+        </div>
+        <ul>
+            <li><a href="/dashboard.html" data-menu="Dashboard"><i class="fa fa-home fa-fw"></i> Dashboard</a></li>
+            <li><a href="/penyusun.html" data-menu="Penghitung Material Penyusun"><i class="fa fa-box fa-fw"></i> Penghitung Material Penyusun</a></li>
+            <li><a href="/waktu.html" data-menu="Penghitung Waktu Produksi"><i class="fa fa-clock fa-fw"></i> Penghitung Waktu Produksi</a></li>
+            <li><a href="/barang.html" data-menu="Penghitung Barang EA"><i class="fa fa-boxes-stacked fa-fw"></i> Penghitung Barang EA</a></li>
+            <li><a href="/box.html" data-menu="Penghitung Box EA"><i class="fa fa-archive fa-fw"></i> Penghitung Box EA</a></li>
+        </ul>
+        <button class="logout-btn" id="logoutBtn">
+            <i class="fa fa-sign-out-alt"></i> Logout
+        </button>
+    </nav>
+
+    <div class="overlay" id="overlay"></div>
+
+    <main class="main-content">
+        <div class="welcome-section">
+            <h1 id="welcomeMessage">Selamat Datang!</h1>
+            <p>Pilih menu di bawah untuk mulai menggunakan sistem</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fa fa-users"></i>
+                <h3 id="totalUsers">0</h3>
+                <p>Total User</p>
+            </div>
+            <div class="stat-card">
+                <i class="fa fa-user-check"></i>
+                <h3 id="onlineUsersCount">0</h3>
+                <p>User Online</p>
+            </div>
+            <div class="stat-card">
+                <i class="fa fa-clock"></i>
+                <h3 id="totalActivities">0</h3>
+                <p>Total Aktivitas</p>
+            </div>
+        </div>
+
+        <div class="menu-grid">
+            <a href="/penyusun.html" class="menu-card" data-menu="Penghitung Material Penyusun">
+                <i class="fa fa-box"></i>
+                <h3>Penghitung Material Penyusun</h3>
+                <p>Hitung kebutuhan material untuk produksi</p>
+            </a>
+            <a href="/waktu.html" class="menu-card" data-menu="Penghitung Waktu Produksi">
+                <i class="fa fa-clock"></i>
+                <h3>Penghitung Waktu Produksi</h3>
+                <p>Estimasi waktu yang dibutuhkan</p>
+            </a>
+            <a href="/barang.html" class="menu-card" data-menu="Penghitung Barang EA">
+                <i class="fa fa-boxes-stacked"></i>
+                <h3>Penghitung Barang EA</h3>
+                <p>Hitung jumlah barang per EA</p>
+            </a>
+            <a href="/box.html" class="menu-card" data-menu="Penghitung Box EA">
+                <i class="fa fa-archive"></i>
+                <h3>Penghitung Box EA</h3>
+                <p>Hitung kebutuhan box untuk produksi</p>
+            </a>
+        </div>
+
+        <div class="online-users-section">
+            <div class="section-header">
+                <h2>
+                    <i class="fa fa-users"></i>
+                    User Online
+                    <span class="online-badge" id="onlineCount">0</span><br></br>
+                </h2>
+                <button class="refresh-btn" id="refreshUsers">
+                    <i class="fa fa-sync"></i>
+                    Refresh
+                </button>
+            </div>
+            <div id="usersList" class="users-list">
+                <div class="no-data">Memuat data user...</div>
+            </div>
+        </div>
+
+        <div class="activity-logs-section">
+            <div class="section-header">
+                <h2>
+                    <i class="fa fa-history"></i>
+                    Aktivitas Terbaru
+                </h2>
+                <button class="refresh-btn" id="refreshActivities">
+                    <i class="fa fa-sync"></i>
+                    Refresh
+                </button>
+            </div>
+            <div id="activityList" class="activity-list">
+                <div class="no-data">Memuat aktivitas...</div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        
+import { 
+    requireAuth, 
+    getCurrentUser, 
+    logoutUser, 
+    getOnlineUsers, 
+    updateUserActivity,
+    subscribeToOnlineUsers,
+    subscribeToActivityLogs,
+    getActivityLogs,
+    trackNavigation,
+    testActivityLogsAccess,
+    getSupabase  // GANTI dari 'supabase' ke 'getSupabase'
+} from './supabase-client.js';
+
+requireAuth();
+
+const menuBtn = document.getElementById('menuBtn');
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+const logoutBtn = document.getElementById('logoutBtn');
+const userGreeting = document.getElementById('userGreeting');
+const userEmail = document.getElementById('userEmail');
+const welcomeMessage = document.getElementById('welcomeMessage');
+const onlineCount = document.getElementById('onlineCount');
+const usersList = document.getElementById('usersList');
+const activityList = document.getElementById('activityList');
+const refreshUsers = document.getElementById('refreshUsers');
+const refreshActivities = document.getElementById('refreshActivities');
+
+function toggleSidebar() {
+    menuBtn.classList.toggle('open');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+menuBtn.addEventListener('click', toggleSidebar);
+overlay.addEventListener('click', toggleSidebar);
+
+logoutBtn.addEventListener('click', async () => {
+    await logoutUser();
+});
+
+async function loadUserInfo() {
+    const user = await getCurrentUser();
+    if (user) {
+        userGreeting.textContent = `Halo, ${user.username}`;
+        userEmail.textContent = user.nik;
+        welcomeMessage.textContent = `Selamat Datang, ${user.username}!`;
+    }
+}
+
+async function loadOnlineUsers() {
+    const users = await getOnlineUsers();
+    onlineCount.textContent = users.length;
+    document.getElementById('onlineUsersCount').textContent = users.length;
+
+    if (users.length === 0) {
+        usersList.innerHTML = '<div class="no-data">Tidak ada user online saat ini</div>';
+        return;
+    }
+
+    usersList.innerHTML = users.map(user => {
+        const initial = user.username.charAt(0).toUpperCase();
+        return `
+            <div class="user-card">
+                <div class="user-avatar">${initial}</div>
+                <div class="user-info">
+                    <div class="username">${user.username}</div>
+                    <div class="status">
+                        <span class="status-dot"></span>
+                        Online
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function formatTimeAgo(dateString) {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffMs = now - past;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Baru saja';
+    if (diffMins < 60) return `${diffMins} menit yang lalu`;
+    if (diffHours < 24) return `${diffHours} jam yang lalu`;
+    return `${diffDays} hari yang lalu`;
+}
+
+function getActivityIcon(activityType) {
+    switch(activityType) {
+        case 'LOGIN':
+            return '<i class="fa fa-sign-in-alt"></i>';
+        case 'LOGOUT':
+            return '<i class="fa fa-sign-out-alt"></i>';
+        case 'NAVIGATION':
+            return '<i class="fa fa-mouse-pointer"></i>';
+        case 'PAGE_UNLOAD':
+            return '<i class="fa fa-door-open"></i>';
+        default:
+            return '<i class="fa fa-info-circle"></i>';
+    }
+}
+
+function getActivityIconClass(activityType) {
+    switch(activityType) {
+        case 'LOGIN':
+            return 'login';
+        case 'LOGOUT':
+        case 'PAGE_UNLOAD':
+            return 'logout';
+        case 'NAVIGATION':
+            return 'navigation';
+        default:
+            return 'navigation';
+    }
+}
+
+async function loadActivityLogs() {
+    console.log('=== Loading Activity Logs ===');
+    
+    try {
+        // Test access first
+        const testResult = await testActivityLogsAccess();
+        console.log('Access test result:', testResult);
+        
+        if (!testResult.success) {
+            console.error('Cannot access activity_logs table');
+            activityList.innerHTML = `
+                <div class="no-data" style="color: #dc3545;">
+                    <i class="fa fa-exclamation-triangle"></i><br>
+                    Error mengakses data aktivitas.<br>
+                    <small>Periksa RLS policies di Supabase.</small>
+                    <br><br>
+                    <button onclick="location.reload()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Coba Lagi
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        // Get actual data
+        const activities = await getActivityLogs(50);
+        console.log('Activities fetched:', activities?.length || 0);
+        
+        document.getElementById('totalActivities').textContent = activities.length;
+
+        if (activities.length === 0) {
+            // PERBAIKAN: Gunakan getSupabase() dengan await
+            const supabase = await getSupabase();
+            const { count } = await supabase
+                .from('activity_logs')
+                .select('*', { count: 'exact', head: true });
+            
+            console.log('Total records in database:', count);
+            
+            if (count > 0) {
+                activityList.innerHTML = `
+                    <div class="no-data" style="color: #dc3545;">
+                        <i class="fa fa-exclamation-triangle"></i><br>
+                        Ada ${count} aktivitas di database tapi tidak bisa diakses.<br>
+                        <small>Periksa RLS policies untuk tabel activity_logs.</small>
+                    </div>
+                `;
+            } else {
+                activityList.innerHTML = '<div class="no-data">Belum ada aktivitas</div>';
+            }
+            return;
+        }
+
+        activityList.innerHTML = activities.map(activity => {
+            const username = activity.users?.username || 'Unknown User';
+            return `
+                <div class="activity-item">
+                    <div class="activity-icon ${getActivityIconClass(activity.activity_type)}">
+                        ${getActivityIcon(activity.activity_type)}
+                    </div>
+                    <div class="activity-content">
+                        <div class="username">${username}</div>
+                        <div class="description">${activity.description}</div>
+                        <div class="time">${formatTimeAgo(activity.created_at)}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        console.log('Successfully loaded and displayed activities');
+        
+    } catch (err) {
+        console.error('Error in loadActivityLogs:', err);
+        activityList.innerHTML = `
+            <div class="no-data" style="color: #dc3545;">
+                <i class="fa fa-exclamation-triangle"></i><br>
+                Error: ${err.message || 'Terjadi kesalahan'}
+                <br><br>
+                <button onclick="location.reload()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Refresh Halaman
+                </button>
+            </div>
+        `;
+    }
+}
+
+async function loadStats() {
+    try {
+        // PERBAIKAN: Gunakan getSupabase() dengan await
+        const supabase = await getSupabase();
+        const { count: totalUsers } = await supabase
+            .from('users')
+            .select('*', { count: 'exact', head: true });
+        
+        document.getElementById('totalUsers').textContent = totalUsers || 0;
+    } catch (err) {
+        console.error('Error loading stats:', err);
+    }
+}
+
+// Track menu clicks
+document.querySelectorAll('a[data-menu]').forEach(link => {
+    link.addEventListener('click', function() {
+        const menuName = this.getAttribute('data-menu');
+        trackNavigation(menuName);
+    });
+});
+
+// Refresh buttons
+refreshUsers.addEventListener('click', loadOnlineUsers);
+refreshActivities.addEventListener('click', () => {
+    console.log('Manual refresh triggered');
+    loadActivityLogs();
+});
+
+// Subscribe to realtime updates
+subscribeToOnlineUsers(loadOnlineUsers);
+subscribeToActivityLogs((newActivity) => {
+    console.log('Received new activity via realtime:', newActivity);
+    loadActivityLogs();
+});
+
+// Initial load
+console.log('=== Dashboard Initializing ===');
+loadUserInfo();
+loadOnlineUsers();
+loadActivityLogs();
+loadStats();
+
+// Update user activity every minute
+setInterval(updateUserActivity, 60000);
+
+// Refresh data periodically
+setInterval(loadOnlineUsers, 30000);
+setInterval(loadActivityLogs, 60000);
+
+console.log('=== Dashboard Initialized ===');
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penghitung Barang per EA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* CSS untuk tampilan (Styling) */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            transition: background-color 0.3s;
+        }
+
+        /* Tombol Menu (Hamburger Icon) */
+        .menu-btn {
+            position: fixed;
+            top: 15px;
+            left: 20px;
+            font-size: 24px; /* Sedikit diperkecil agar pas */
+            cursor: pointer;
+            z-index: 1001;
+            color: #333;
+            width: 40px; /* Tambah lebar dan tinggi agar ada ruang */
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease; /* Tambah transisi untuk efek putar */
+        }
+        
+        /* === PERUBAHAN CSS DIMULAI DI SINI === */
+
+        /* Sembunyikan ikon close secara default */
+        .menu-btn .icon-close {
+            display: none;
+        }
+
+        /* Saat menu-btn punya kelas 'open', sembunyikan hamburger */
+        .menu-btn.open .icon-hamburger {
+            display: none;
+        }
+
+        /* Saat menu-btn punya kelas 'open', tampilkan ikon close */
+        .menu-btn.open .icon-close {
+            display: block;
+        }
+        
+        /* Efek putar saat tombol menu aktif */
+        .menu-btn.open {
+            transform: rotate(180deg);
+        }
+        
+        /* === PERUBAHAN CSS SELESAI === */
+
+        /* Sidebar */
+        .sidebar {
+            height: 100%;
+            width: 280px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #ffffff;
+            z-index: 1000;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transform: translateX(-100%); 
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .sidebar ul {
+            list-style-type: none;
+            padding: 15px 0;
+            margin: 60px 0 0 0; /* Beri margin atas agar tidak tertutup tombol menu */
+        }
+
+        .sidebar ul li a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            text-decoration: none;
+            font-size: 1em;
+            color: #333;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .sidebar ul li a .fa-fw {
+            margin-right: 15px;
+            width: 20px;
+            text-align: center;
+            color: #555;
+        }
+
+        .sidebar ul li a:hover {
+            background-color: #f0f0f0;
+            color: #000;
+        }
+
+        .sidebar hr {
+            border: 0;
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 10px 20px;
+        }
+        
+        .main-content {
+            padding: 20px;
+            padding-top: 70px; /* Tambah padding atas agar konten tidak tertutup tombol menu */
+            margin-left: 0;
+            transition: margin-left 0.3s ease-in-out;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        
+    </style>
+</head>
+<body>
+
+    <div class="menu-btn" id="menuBtn">
+        <i class="fa fa-bars icon-hamburger"></i>
+        <i class="fa fa-times icon-close"></i>
+    </div>
+    <nav class="sidebar" id="sidebar">
+        <ul>
+            <li><a href="/dashboard.html"><i class="fa fa-home fa-fw"></i> Dashboard</a></li>
+            <li><a href="/penyusun.html"><i class="fa fa-box fa-fw"></i> Penghitung Material Penyusun</a></li>
+            <li><a href="/waktu.html"><i class="fa fa-clock fa-fw"></i> Penghitung Waktu Produksi</a></li>
+            <li><a href="/barang.html"><i class="fa fa-boxes-stacked fa-fw"></i> Penghitung Barang EA</a></li>
+            <li><a href="/box.html"><i class="fa fa-archive fa-fw"></i> Penghitung Box EA</a></li>
+            <hr>
+            <li><a href="#" id="logoutBtn"><i class="fa fa-sign-out-alt fa-fw"></i> Logout</a></li>
+        </ul>
+    </nav>
+    
+    <div class="overlay" id="overlay"></div>
+
+    <main class="main-content" id="mainContent">
+       
+
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .calculator-container {
+            background-color: white;
+            padding: 2rem 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: auto;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #444;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .time-inputs {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .time-inputs input {
+            flex: 1;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            flex-grow: 1;
+            padding: 0.8rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        #resetBtn {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        #resetBtn:hover {
+            background-color: #5a6268;
+        }
+
+        .result-display {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            display: none;
+        }
+
+        .result-display.success {
+            display: block;
+            background-color: #e7f4e8;
+            color: #28a745;
+            border: 1px solid #c3e6cb;
+        }
+
+        .result-display.error {
+            display: block;
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator-container">
+        <h1>Kalkulator Produksi Barang</h1>
+        <p>Hitung jumlah unit yang dikerjakan berdasarkan target dan waktu.</p>
+        
+        <form id="calculatorForm">
+            <div class="input-group">
+                <label for="targetPerJam">Target per Jam (ea/jam)</label>
+                <input type="number" id="targetPerJam" placeholder="Contoh: 117" required>
+            </div>
+            
+            <div class="input-group">
+                <label>Waktu Dikerjakan</label>
+                <div class="time-inputs">
+                    <input type="number" id="jam" placeholder="Jam" min="0">
+                    <input type="number" id="menit" placeholder="Menit" min="0" max="59">
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button type="submit">Hitung Hasil</button>
+                <button type="button" id="resetBtn">Reset</button>
+            </div>
+        </form>
+        
+        <div id="result" class="result-display"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('calculatorForm');
+            const targetPerJamInput = document.getElementById('targetPerJam');
+            const jamInput = document.getElementById('jam');
+            const menitInput = document.getElementById('menit');
+            const resultDiv = document.getElementById('result');
+            const resetBtn = document.getElementById('resetBtn');
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                const targetPerJam = parseFloat(targetPerJamInput.value);
+                const jam = parseInt(jamInput.value) || 0;
+                const menit = parseInt(menitInput.value) || 0;
+                const totalMenit = (jam * 60) + menit;
+
+                if (isNaN(targetPerJam) || targetPerJam <= 0 || totalMenit <= 0) {
+                    displayError("Harap masukkan angka yang valid dan waktu harus lebih dari 0.");
+                    return;
+                }
+
+                const hasil = (targetPerJam / 60) * totalMenit;
+                const hasilBulat = Math.round(hasil);
+
+                displayResult(hasilBulat);
+            });
+
+            function displayResult(hasil) {
+                resultDiv.innerHTML = `Jumlah yang dikerjakan: <strong>${hasil} ea</strong>`;
+                resultDiv.className = 'result-display success';
+            }
+
+            function displayError(message) {
+                resultDiv.innerHTML = message;
+                resultDiv.className = 'result-display error';
+            }
+
+            resetBtn.addEventListener('click', () => {
+                form.reset();
+                resultDiv.innerHTML = '';
+                resultDiv.className = 'result-display';
+            });
+        });
+    </script>
+        
+        
+        
+        
+        
+        
+            <script>
+        // JavaScript untuk fungsionalitas buka-tutup
+        const menuBtn = document.getElementById('menuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+
+        function toggleSidebar() {
+            // === PERUBAHAN JAVASCRIPT DIMULAI DI SINI ===
+            // Toggle kelas 'open' pada tombol menu itu sendiri
+            menuBtn.classList.toggle('open');
+            // === PERUBAHAN JAVASCRIPT SELESAI ===
+
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        menuBtn.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', toggleSidebar);
+        </script>
+
+    <script type="module">
+        import { requireAuth, logoutUser, updateUserActivity } from './supabase-client.js';
+
+        requireAuth();
+
+        document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logoutUser();
+        });
+
+        setInterval(updateUserActivity, 60000);
+    </script>
+</body>
+</html>

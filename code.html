@@ -1,0 +1,147 @@
+/* 
+ * TAMBAHKAN SCRIPT INI DI SEMUA HALAMAN (barang.html, box.html, penyusun.html, waktu.html)
+ * Letakkan di bagian bawah, sebelum closing </body>
+ */
+
+<script type="module">
+    import { requireAuth, logoutUser, updateUserActivity, trackNavigation } from './supabase-client.js';
+
+    requireAuth();
+
+    // Track page access - ganti 'PAGE_NAME' dengan nama halaman yang sesuai
+    // Untuk penyusun.html: 'Penghitung Material Penyusun'
+    // Untuk waktu.html: 'Penghitung Waktu Produksi'
+    // Untuk barang.html: 'Penghitung Barang EA'
+    // Untuk box.html: 'Penghitung Box EA'
+    trackNavigation('Penghitung Material Penyusun'); // <-- GANTI INI
+
+    // Logout button handler
+    document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await logoutUser();
+    });
+
+    // Track sidebar navigation clicks
+    document.querySelectorAll('.sidebar a[data-menu]').forEach(link => {
+        link.addEventListener('click', function() {
+            const menuName = this.getAttribute('data-menu');
+            trackNavigation(menuName);
+        });
+    });
+
+    // Update user activity every minute
+    setInterval(updateUserActivity, 60000);
+
+    // Hamburger menu functionality
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+
+    function toggleSidebar() {
+        menuBtn.classList.toggle('open');
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    menuBtn.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+</script>
+
+/* 
+ * CONTOH LENGKAP UNTUK penyusun.html
+ * Ganti bagian script di akhir file dengan kode di bawah ini:
+ */
+
+// ============= HAPUS SCRIPT LAMA INI =============
+/*
+<script>
+    // JavaScript untuk fungsionalitas buka-tutup
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+
+    function toggleSidebar() {
+        menuBtn.classList.toggle('open');
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    menuBtn.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+</script>
+
+<script type="module">
+    import { requireAuth, logoutUser, updateUserActivity } from './supabase-client.js';
+
+    requireAuth();
+
+    document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await logoutUser();
+    });
+
+    setInterval(updateUserActivity, 60000);
+</script>
+*/
+
+// ============= GANTI DENGAN SCRIPT BARU INI =============
+
+<script type="module">
+    import { requireAuth, logoutUser, updateUserActivity, trackNavigation } from './supabase-client.js';
+
+    requireAuth();
+
+    // Track bahwa user mengakses halaman ini
+    trackNavigation('Penghitung Material Penyusun');
+
+    // Logout button handler
+    document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await logoutUser();
+    });
+
+    // Track sidebar navigation clicks
+    document.querySelectorAll('.sidebar a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            const text = this.textContent.trim();
+            if (text !== 'Logout') {
+                trackNavigation(text);
+            }
+        });
+    });
+
+    // Update user activity every minute
+    setInterval(updateUserActivity, 60000);
+
+    // Hamburger menu functionality
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+
+    function toggleSidebar() {
+        menuBtn.classList.toggle('open');
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    menuBtn.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+</script>
+
+/* 
+ * CATATAN PENTING:
+ * 
+ * 1. Untuk setiap halaman, ganti parameter trackNavigation() dengan nama yang sesuai:
+ *    - penyusun.html: trackNavigation('Penghitung Material Penyusun');
+ *    - waktu.html: trackNavigation('Penghitung Waktu Produksi');
+ *    - barang.html: trackNavigation('Penghitung Barang EA');
+ *    - box.html: trackNavigation('Penghitung Box EA');
+ * 
+ * 2. Script ini akan otomatis:
+ *    - Track saat user masuk ke halaman
+ *    - Track saat user klik menu di sidebar
+ *    - Update status online user setiap menit
+ *    - Handle logout dengan proper activity logging
+ * 
+ * 3. Pastikan semua link di sidebar punya struktur yang sama untuk tracking
+ */

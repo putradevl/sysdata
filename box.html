@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penghitung Barang per EA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* CSS untuk tampilan (Styling) */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            transition: background-color 0.3s;
+        }
+
+        /* Tombol Menu (Hamburger Icon) */
+        .menu-btn {
+            position: fixed;
+            top: 15px;
+            left: 20px;
+            font-size: 24px; /* Sedikit diperkecil agar pas */
+            cursor: pointer;
+            z-index: 1001;
+            color: #333;
+            width: 40px; /* Tambah lebar dan tinggi agar ada ruang */
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease; /* Tambah transisi untuk efek putar */
+        }
+        
+        /* === PERUBAHAN CSS DIMULAI DI SINI === */
+
+        /* Sembunyikan ikon close secara default */
+        .menu-btn .icon-close {
+            display: none;
+        }
+
+        /* Saat menu-btn punya kelas 'open', sembunyikan hamburger */
+        .menu-btn.open .icon-hamburger {
+            display: none;
+        }
+
+        /* Saat menu-btn punya kelas 'open', tampilkan ikon close */
+        .menu-btn.open .icon-close {
+            display: block;
+        }
+        
+        /* Efek putar saat tombol menu aktif */
+        .menu-btn.open {
+            transform: rotate(180deg);
+        }
+        
+        /* === PERUBAHAN CSS SELESAI === */
+
+        /* Sidebar */
+        .sidebar {
+            height: 100%;
+            width: 280px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #ffffff;
+            z-index: 1000;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transform: translateX(-100%); 
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .sidebar ul {
+            list-style-type: none;
+            padding: 15px 0;
+            margin: 60px 0 0 0; /* Beri margin atas agar tidak tertutup tombol menu */
+        }
+
+        .sidebar ul li a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            text-decoration: none;
+            font-size: 1em;
+            color: #333;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .sidebar ul li a .fa-fw {
+            margin-right: 15px;
+            width: 20px;
+            text-align: center;
+            color: #555;
+        }
+
+        .sidebar ul li a:hover {
+            background-color: #f0f0f0;
+            color: #000;
+        }
+
+        .sidebar hr {
+            border: 0;
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 10px 20px;
+        }
+        
+        .main-content {
+            padding: 20px;
+            padding-top: 70px; /* Tambah padding atas agar konten tidak tertutup tombol menu */
+            margin-left: 0;
+            transition: margin-left 0.3s ease-in-out;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        
+    </style>
+</head>
+<body>
+
+    <div class="menu-btn" id="menuBtn">
+        <i class="fa fa-bars icon-hamburger"></i>
+        <i class="fa fa-times icon-close"></i>
+    </div>
+    <nav class="sidebar" id="sidebar">
+        <ul>
+            <li><a href="/dashboard.html"><i class="fa fa-home fa-fw"></i> Dashboard</a></li>
+            <li><a href="/penyusun.html"><i class="fa fa-box fa-fw"></i> Penghitung Material Penyusun</a></li>
+            <li><a href="/waktu.html"><i class="fa fa-clock fa-fw"></i> Penghitung Waktu Produksi</a></li>
+            <li><a href="/barang.html"><i class="fa fa-boxes-stacked fa-fw"></i> Penghitung Barang EA</a></li>
+            <li><a href="/box.html"><i class="fa fa-archive fa-fw"></i> Penghitung Box EA</a></li>
+            <hr>
+            <li><a href="#" id="logoutBtn"><i class="fa fa-sign-out-alt fa-fw"></i> Logout</a></li>
+        </ul>
+    </nav>
+    
+    <div class="overlay" id="overlay"></div>
+
+    <main class="main-content" id="mainContent">
+       
+        
+        
+          <style>
+        /* Gaya umum untuk body */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            
+            box-sizing: border-box;
+        }
+
+        /* Kontainer kartu utama */
+        .card {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: auto;
+            max-width: 400px;
+        }
+
+        /* Judul dan Teks */
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #1c1e21;
+            text-align: center;
+        }
+
+        p {
+            color: #606770;
+            margin-bottom: 24px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        /* Grup untuk Label dan Input */
+        .form-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* Input field */
+        input[type=number] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        input[type=number]:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        /* Kontainer Tombol */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        /* Gaya umum tombol */
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        /* Warna spesifik tombol */
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        /* --- GAYA BARU UNTUK KOTAK HASIL --- */
+        .alert-box {
+            background-color: #e9f7ef; /* Warna hijau muda */
+            color: #155724; /* Warna teks hijau tua */
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 24px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* Kelas untuk menyembunyikan elemen */
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1><b>Kalkulator Barang dan Box</b></h1>
+        <p>Masukkan data barang untuk menghitung jumlah box yang dibutuhkan.</p>
+
+        <div class="form-group">
+            <label for="jumlahBarang">Jumlah Barang:</label>
+            <input type="number" id="jumlahBarang" placeholder="Masukkan jumlah barang">
+        </div>
+
+        <div class="form-group">
+            <label for="isiPerBox">Isi per Box:</label>
+            <input type="number" id="isiPerBox" placeholder="Masukkan isi per box">
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="hitungBox()">Hitung</button>
+            <button class="btn-secondary" onclick="resetForm()">Reset</button>
+        </div>
+
+        <div id="hasil" class="alert-box hidden">
+            </div>
+    </div>
+
+    <script>
+        function hitungBox() {
+            // Dapatkan elemen div hasil
+            const hasilDiv = document.getElementById("hasil");
+
+            const jumlahBarang = document.getElementById("jumlahBarang").value;
+            const isiPerBox = document.getElementById("isiPerBox").value;
+
+            // Validasi input
+            if (!jumlahBarang || !isiPerBox || isiPerBox == 0) {
+                hasilDiv.innerText = "Harap isi semua kolom dengan benar.";
+                // Tampilkan kotak hasil (meskipun isinya pesan error)
+                hasilDiv.classList.remove('hidden');
+                return;
+            }
+
+            const jumlahBox = Math.floor(jumlahBarang / isiPerBox);
+            const sisaBarang = jumlahBarang % isiPerBox;
+
+            // Masukkan teks hasil ke dalam div
+            hasilDiv.innerText = 
+                "Jumlah Box: " + jumlahBox + " box, lebih " + sisaBarang + " barang";
+            
+            // Hapus kelas 'hidden' untuk menampilkan kotak hasil
+            hasilDiv.classList.remove('hidden');
+        }
+
+        function resetForm() {
+            const hasilDiv = document.getElementById("hasil");
+
+            document.getElementById("jumlahBarang").value = '';
+            document.getElementById("isiPerBox").value = '';
+            
+            // Kosongkan teks hasil
+            hasilDiv.innerText = '';
+
+            // Tambahkan kembali kelas 'hidden' untuk menyembunyikan kotak hasil
+            hasilDiv.classList.add('hidden');
+        }
+    </script>
+        
+        
+            <script>
+        // JavaScript untuk fungsionalitas buka-tutup
+        const menuBtn = document.getElementById('menuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+
+        function toggleSidebar() {
+            // === PERUBAHAN JAVASCRIPT DIMULAI DI SINI ===
+            // Toggle kelas 'open' pada tombol menu itu sendiri
+            menuBtn.classList.toggle('open');
+            // === PERUBAHAN JAVASCRIPT SELESAI ===
+
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        menuBtn.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', toggleSidebar);
+        </script>
+
+    <script type="module">
+        import { requireAuth, logoutUser, updateUserActivity } from './supabase-client.js';
+
+        requireAuth();
+
+        document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logoutUser();
+        });
+
+        setInterval(updateUserActivity, 60000);
+    </script>
+</body>
+</html>

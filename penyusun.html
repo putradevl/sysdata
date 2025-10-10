@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penghitung Material Penyusun</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* CSS untuk tampilan (Styling) */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            transition: background-color 0.3s;
+        }
+
+        /* Tombol Menu (Hamburger Icon) */
+        .menu-btn {
+            position: fixed;
+            top: 15px;
+            left: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1001;
+            color: #333;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+        
+        /* === PERUBAHAN CSS MENU === */
+        .menu-btn .icon-close { display: none; }
+        .menu-btn.open .icon-hamburger { display: none; }
+        .menu-btn.open .icon-close { display: block; }
+        .menu-btn.open { transform: rotate(180deg); }
+        /* === PERUBAHAN CSS MENU SELESAI === */
+
+        /* Sidebar */
+        .sidebar {
+            height: 100%;
+            width: 280px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #ffffff;
+            z-index: 1000;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transform: translateX(-100%); 
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .sidebar ul {
+            list-style-type: none;
+            padding: 15px 0;
+            margin: 60px 0 0 0;
+        }
+
+        .sidebar ul li a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            text-decoration: none;
+            font-size: 1em;
+            color: #333;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .sidebar ul li a .fa-fw {
+            margin-right: 15px;
+            width: 20px;
+            text-align: center;
+            color: #555;
+        }
+
+        .sidebar ul li a:hover {
+            background-color: #f0f0f0;
+            color: #000;
+        }
+
+        .sidebar hr {
+            border: 0;
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 10px 20px;
+        }
+        
+        .main-content {
+            padding: 20px;
+            padding-top: 70px;
+            margin-left: 0;
+            transition: margin-left 0.3s ease-in-out;
+            
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+            padding-bottom: 20px;
+            padding-top: 70px;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Styling untuk Kalkulator */
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 350px;
+            /* --- PERBAIKAN PENTING UNTUK MOBILE/RESPONSIF --- */
+            max-width: calc(100% - 40px); /* Memastikan lebar maksimal tidak melebihi viewport dikurangi padding */
+            /* ------------------------------------------------ */
+        }
+        h2 { text-align: center; margin-bottom: 20px; }
+        select, input, button { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .result { margin-top: 15px; background: #f8f8f8; padding: 10px; border-radius: 5px; text-align: center; }
+        .info-box { background: #e6f4ea; color: #1e7e34; padding: 12px; border-radius: 8px; margin: 10px 0 15px 0; font-size: 14px; font-weight: bold; border: 1px solid #c3e6cb; }
+        .input-group { display: flex; gap: 10px; }
+        .input-group input { width: 50%; }
+        .button-group { display: flex; gap: 10px; margin-top: 10px; }
+        .button-group button { flex: 1; border: none; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover { background: #5a6268; }
+
+        /* CSS untuk Gambar */
+        .image-container {
+            margin-bottom: 15px;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 5px;
+            display: none;
+        }
+        .image-container img {
+            display: block;
+            width: auto;
+            max-width: none;
+            height: 100px;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="menu-btn" id="menuBtn">
+        <i class="fa fa-bars icon-hamburger"></i>
+        <i class="fa fa-times icon-close"></i>
+    </div>
+    <nav class="sidebar" id="sidebar">
+        <ul>
+            <li><a href="/dashboard.html"><i class="fa fa-home fa-fw"></i> Dashboard</a></li>
+            <li><a href="/penyusun.html"><i class="fa fa-box fa-fw"></i> Penghitung Material Penyusun</a></li>
+            <li><a href="/waktu.html"><i class="fa fa-clock fa-fw"></i> Penghitung Waktu Produksi</a></li>
+            <li><a href="/barang.html"><i class="fa fa-boxes-stacked fa-fw"></i> Penghitung Barang EA</a></li>
+            <li><a href="/box.html"><i class="fa fa-archive fa-fw"></i> Penghitung Box EA</a></li>
+            <hr>
+            <li><a href="#" id="logoutBtn"><i class="fa fa-sign-out-alt fa-fw"></i> Logout</a></li>
+        </ul>
+    </nav>
+    
+    <div class="overlay" id="overlay"></div>
+
+    <main class="main-content" id="mainContent">
+        
+        <div class="container">
+            <h2>Kalkulator Material Penyusun</h2>
+
+            <label for="material">Pilih Material</label>
+            <select id="material">
+                <option value="">-- Pilih Material --</option>
+            </select>
+
+            <div class="image-container" id="imageContainer">
+                <img id="materialImage" src="" alt="Gambar Material" style="display:none;">
+            </div>
+            <div id="info" class="info-box" style="display:none;"></div>
+
+            <label>Jumlah Produksi</label>
+            <div class="input-group">
+                <input type="number" id="good" placeholder="GOOD">
+                <input type="number" id="ng" placeholder="NG">
+            </div> 
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="hitung()">Hitung Hasil</button>
+                <button class="btn-secondary" type="button" onclick="resetForm()">Reset</button>
+            </div>
+            <div class="result" id="hasil"></div>
+        </div>
+
+
+        <script>
+let data = null;
+
+fetch('/dataimg.json')
+    .then(response => response.json())
+    .then(json => {
+        data = json;
+        const materialSelect = document.getElementById('material');
+        data.Sheet1.forEach((item, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = item["PRODUKSI"];
+            materialSelect.appendChild(option);
+        });
+    })
+    .catch(err => console.error('Gagal memuat JSON:', err));
+
+document.getElementById('material').addEventListener('change', () => {
+    const selectedIndex = document.getElementById('material').value;
+    const selected = data?.Sheet1[selectedIndex];
+    const infoDiv = document.getElementById('info');
+    const imageContainer = document.getElementById('imageContainer');
+    const materialImage = document.getElementById('materialImage');
+
+    if (selected) {
+        // LOGIKA MENAMPILKAN GAMBAR
+        if (selected["IMG"]) {
+            materialImage.src = selected["IMG"];
+            materialImage.style.display = 'block';
+            imageContainer.style.display = 'block';
+        } else {
+            materialImage.src = '';
+            materialImage.style.display = 'none';
+            imageContainer.style.display = 'none';
+        }
+        // LOGIKA MENAMPILKAN GAMBAR SELESAI
+
+        infoDiv.style.display = 'block';
+        let html = `
+            Material: ${selected["NAME MATERIAL"]}<br>
+            No Gudang: ${selected["WAREHOUSE CODE"]}<br>
+            Tinta: ${selected["INK TYPE"]} - ${selected["INK COUNT"]}
+        `;
+
+        if (selected["LF PROTECT TYPE"] !== "NO" && selected["LF PROTECT COUNT"] !== "NO") {
+            html += `<br>LF Protect Type: ${selected["LF PROTECT TYPE"]}<br>
+                    LF Protect Count: ${selected["LF PROTECT COUNT"]}`;
+        }
+        if (selected["RETADER KSM 076"] !== "NO") {
+            html += `<br>Retader KSM 076: ${selected["RETADER KSM 076"]}`;
+        }
+        if (selected["RETADER KSM 051"] !== "NO") {
+            html += `<br>Retader KSM 051: ${selected["RETADER KSM 051"]}`;
+        }
+        if (selected["HARDENER H1"] !== "NO") {
+            html += `<br>Hardener H1: ${selected["HARDENER H1"]}`;
+        }
+        if (selected["THINER COUNT"] !== "NO") {
+            html += `<br>Thiner M3: ${selected["THINER COUNT"]}`;
+        }
+
+        infoDiv.innerHTML = html;
+    } else {
+        // RESET GAMBAR
+        materialImage.src = '';
+        materialImage.style.display = 'none';
+        imageContainer.style.display = 'none';
+        // RESET GAMBAR SELESAI
+
+        infoDiv.style.display = 'none';
+        infoDiv.innerHTML = '';
+    }
+});
+
+// Format angka dimodifikasi: membulatkan ke 2 desimal lalu menghapus nol di akhir
+function formatNumber(num) {
+    // 1. Bulatkan ke 2 desimal untuk mendapatkan hasil yang seragam
+    let str = num.toFixed(2);
+    // 2. Ganti titik desimal dengan koma (standar format Indonesia)
+    str = str.replace('.', ',');
+    // 3. Hapus nol atau koma nol di akhir (contoh: 10,50 menjadi 10,5; 5,00 menjadi 5)
+    // Regex: /(,00$)|(,0$)/
+    return str.replace(/,00$/, '').replace(/,(\d)0$/, ',$1');
+}
+
+function hitung() {
+    const selected = data?.Sheet1[document.getElementById('material').value];
+    const good = parseInt(document.getElementById('good').value) || 0;
+    const ng = parseInt(document.getElementById('ng').value) || 0;
+    const jumlah = good + ng;
+    const hasilDiv = document.getElementById('hasil');
+
+    if (!selected || jumlah === 0) {
+        hasilDiv.innerHTML = `<span style="color:red;">Pilih material dan masukkan jumlah GOOD atau NG!</span>`;
+        return;
+    }
+
+    // Mengganti koma dengan titik untuk parsing float
+    const inkCount = selected["INK COUNT"] !== "NO" ? parseFloat(selected["INK COUNT"].replace(',', '.')) : 0;
+    const thinnerCount = selected["THINER COUNT"] !== "NO" ? parseFloat(selected["THINER COUNT"].replace(',', '.')) : 0;
+
+    const totalInk = inkCount * jumlah;
+    const totalThinner = thinnerCount * jumlah;
+
+    let hasilHTML = `<strong>Total Produksi:</strong> ${jumlah} ea (GOOD: ${good} | NG: ${ng})<br>`;
+    if (inkCount > 0) hasilHTML += `<strong>Tinta ${selected["INK TYPE"]}:</strong> ${formatNumber(totalInk)} g<br>`;
+    if (thinnerCount > 0) hasilHTML += `<strong>Thinner M3:</strong> ${formatNumber(totalThinner)} ml<br>`;
+
+    if (selected["LF PROTECT TYPE"] !== "NO" && selected["LF PROTECT COUNT"] !== "NO") {
+        const lfCountMm = parseFloat(selected["LF PROTECT COUNT"].replace(',', '.'));
+        const totalLfMm = lfCountMm * jumlah;
+        const totalLfCm = Math.round(totalLfMm / 10);
+        // Untuk hasil LF Protect, kita biarkan Math.round() karena satuannya berbeda (mm/cm)
+        hasilHTML += `<strong>LF Protect:</strong> ${Math.round(totalLfMm)} mm (${totalLfCm} cm) - ${selected["LF PROTECT TYPE"]}<br>`;
+    }
+
+    if (selected["RETADER KSM 076"] !== "NO") {
+        const ret076 = parseFloat(selected["RETADER KSM 076"].replace(',', '.')) * jumlah;
+        hasilHTML += `<strong>Retader KSM 076:</strong> ${formatNumber(ret076)} ml<br>`;
+    }
+    if (selected["RETADER KSM 051"] !== "NO") {
+        const ret051 = parseFloat(selected["RETADER KSM 051"].replace(',', '.')) * jumlah;
+        hasilHTML += `<strong>Retader KSM 051:</strong> ${formatNumber(ret051)} ml<br>`;
+    }
+    if (selected["HARDENER H1"] !== "NO") {
+        const hard1 = parseFloat(selected["HARDENER H1"].replace(',', '.')) * jumlah;
+        hasilHTML += `<strong>Hardener H1:</strong> ${formatNumber(hard1)} g<br>`;
+    }
+
+    hasilDiv.innerHTML = hasilHTML;
+}
+
+function resetForm() {
+    document.getElementById('material').value = "";
+    document.getElementById('good').value = "";
+    document.getElementById('ng').value = "";
+    document.getElementById('hasil').innerHTML = "";
+    document.getElementById('info').style.display = "none";
+    document.getElementById('info').innerHTML = "";
+    // RESET GAMBAR PADA FORM RESET
+    document.getElementById('materialImage').src = "";
+    document.getElementById('materialImage').style.display = "none";
+    document.getElementById('imageContainer').style.display = "none";
+    // RESET GAMBAR PADA FORM RESET SELESAI
+}
+</script>
+ 
+
+    <script type="module">
+        import { requireAuth, logoutUser, updateUserActivity } from './supabase-client.js';
+
+        requireAuth();
+
+        document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logoutUser();
+        });
+
+        setInterval(updateUserActivity, 60000);
+    </script>
+    <script type="module">
+    import { requireAuth, logoutUser, updateUserActivity, trackNavigation } from './supabase-client.js';
+
+    requireAuth();
+
+    // Track page access - ganti 'PAGE_NAME' dengan nama halaman yang sesuai
+    // Untuk penyusun.html: 'Penghitung Material Penyusun'
+    // Untuk waktu.html: 'Penghitung Waktu Produksi'
+    // Untuk barang.html: 'Penghitung Barang EA'
+    // Untuk box.html: 'Penghitung Box EA'
+    trackNavigation('Penghitung Material Penyusun'); // <-- GANTI INI
+
+    // Logout button handler
+    document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await logoutUser();
+    });
+
+    // Track sidebar navigation clicks
+    document.querySelectorAll('.sidebar a[data-menu]').forEach(link => {
+        link.addEventListener('click', function() {
+            const menuName = this.getAttribute('data-menu');
+            trackNavigation(menuName);
+        });
+    });
+
+    // Update user activity every minute
+    setInterval(updateUserActivity, 60000);
+
+    // Hamburger menu functionality
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+
+    function toggleSidebar() {
+        menuBtn.classList.toggle('open');
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    menuBtn.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+</script>
+
+        
+</main>
+</body>
+</html>
