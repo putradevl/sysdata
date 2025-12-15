@@ -53,6 +53,53 @@ export async function logoutUser() {
 }
 
 /* =========================
+   LOGIN USER
+========================= */
+export async function loginUser(username, password) {
+    const supabase = await getSupabase();
+
+    // Ambil user berdasarkan username
+    const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("id, email")
+        .eq("username", username)
+        .single();
+
+    if (userError || !userData) {
+        throw new Error("Username tidak ditemukan");
+    }
+
+    // Login pakai email + password (Supabase Auth)
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: userData.email,
+        password: password,
+    });
+
+    if (loginError) {
+        throw new Error("Password salah");
+    }
+
+    // Update status online
+    await supabase
+        .from("users")
+        .update({
+            is_online: true,
+            last_active: new Date().toISOString(),
+        })
+        .eq("id", userData.id);
+
+    // Catat aktivitas login
+    await supabase.from("activity_logs").insert({
+        user_id: userData.id,
+        activity_type: "LOGIN",
+        description: "User login ke sistem",
+    });
+
+    return true;
+}
+
+
+/* =========================
    ONLINE USERS
 ========================= */
 export async function getOnlineUsers() {
