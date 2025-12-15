@@ -1,206 +1,289 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// ✅ FIX: gunakan esm.sh (stabil, tidak error AuthClient)
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 
-/* =========================
-   KONFIGURASI SUPABASE
-========================= */
-const SUPABASE_URL = "https://hiewrurtuyziovdegrcl.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpZXdydXJ0dXl6aW92ZGVncmNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1ODQ2MzUsImV4cCI6MjA3NTE2MDYzNX0.bkNnhiS7Okc2MootXgZPqjhGjH7ySaLeCfbl-RWiEZg";
-
+// ===============================
+// SUPABASE SINGLETON
+// ===============================
 let supabaseInstance = null;
+let configPromise = null;
+let isInitializing = false;
 
-/* =========================
-   SAFE SUPABASE INIT
-========================= */
+// Load config sekali saja
+async function loadConfig() {
+    if (configPromise) return configPromise;
+
+    configPromise = fetch('/api/config')
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to load config');
+            return res.json();
+        })
+        .then(config => {
+            if (!config.supabaseUrl || !config.supabaseKey) {
+                throw new Error('Invalid config received');
+            }
+            return config;
+        })
+        .catch(err => {
+            console.error('Error loading config:', err);
+            configPromise = null;
+            throw err;
+        });
+
+    return configPromise;
+}
+
+// Ambil Supabase client (singleton, async-safe)
 export async function getSupabase() {
     if (supabaseInstance) return supabaseInstance;
 
-    if (!window.crypto || !window.fetch) {
-        throw new Error("Browser tidak mendukung Supabase (crypto/fetch missing)");
+    if (isInitializing) {
+        while (isInitializing) {
+            await new Promise(r => setTimeout(r, 50));
+        }
+        return supabaseInstance;
     }
 
-    supabaseInstance = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-        },
-    });
+    try {
+        isInitializing = true;
+        const config = await loadConfig();
 
-    return supabaseInstance;
-}
+        if (!supabaseInstance) {
+            supabaseInstance = createClient(
+                config.supabaseUrl,
+                config.supabaseKey
+            );
+            console.log('✅ Supabase client initialized (singleton)');
+        }
 
-/* =========================
-   AUTH
-========================= */
-export async function requireAuth() {
-    const supabase = await getSupabase();
-    const { data } = await supabase.auth.getSession();
-
-    if (!data.session) {
-        window.location.href = "/login.html";
+        return supabaseInstance;
+    } finally {
+        isInitializing = false;
     }
 }
 
+// ===============================
+// DEBUG
+// ===============================
+const DEBUG = true;
+function debugLog(...args) {
+    if (DEBUG) console.log('[DEBUG]', ...args);
+}
+
+// ===============================
+// AUTH & USER
+// ===============================
 export async function getCurrentUser() {
-    const supabase = await getSupabase();
-    const { data } = await supabase.auth.getUser();
-    return data.user;
+    const userId = localStorage.getItem('userId');
+    if (!userId) return null;
+
+    try {
+        const client = await getSupabase();
+        const { data, error } = await client
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (error) return null;
+        return data;
+    } catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
+export async function loginUser(username, password) {
+    try {
+        debugLog('Login:', username);
+        const client = await getSupabase();
+
+        const { data, error } = await client
+            .from('users')
+            .select('*')
+            .eq('username', username)
+            .eq('password', password)
+            .maybeSingle();
+
+        if (error || !data) {
+            return { success: false, error: 'Username atau password salah' };
+        }
+
+        localStorage.setItem('userId', data.id);
+        localStorage.setItem('username', data.username);
+
+        await markUserOnline(data.id, data.username);
+        await logActivity(data.id, 'LOGIN', 'User logged in');
+
+        return { success: true, user: data };
+    } catch (err) {
+        console.error(err);
+        return { success: false, error: 'Terjadi kesalahan' };
+    }
+}
+
+export async function signupUser(nik, username, email, password) {
+    try {
+        const client = await getSupabase();
+
+        const { data: existing } = await client
+            .from('users')
+            .select('username,email,nik')
+            .or(`username.eq.${username},email.eq.${email},nik.eq.${nik}`)
+            .maybeSingle();
+
+        if (existing) {
+            if (existing.username === username) return { success: false, error: 'Username sudah digunakan' };
+            if (existing.email === email) return { success: false, error: 'Email sudah digunakan' };
+            if (existing.nik === nik) return { success: false, error: 'NIK sudah digunakan' };
+        }
+
+        const { data, error } = await client
+            .from('users')
+            .insert([{ nik, username, email, password }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return { success: true, user: data };
+    } catch (err) {
+        console.error(err);
+        return { success: false, error: 'Gagal membuat akun' };
+    }
 }
 
 export async function logoutUser() {
-    const supabase = await getSupabase();
-    await supabase.auth.signOut();
-    window.location.href = "/login.html";
-}
-
-/* =========================
-   LOGIN USER
-========================= */
-export async function loginUser(username, password) {
-    const supabase = await getSupabase();
-
-    // Ambil user berdasarkan username
-    const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("id, email")
-        .eq("username", username)
-        .single();
-
-    if (userError || !userData) {
-        throw new Error("Username tidak ditemukan");
-    }
-
-    // Login pakai email + password (Supabase Auth)
-    const { error: loginError } = await supabase.auth.signInWithPassword({
-        email: userData.email,
-        password: password,
-    });
-
-    if (loginError) {
-        throw new Error("Password salah");
-    }
-
-    // Update status online
-    await supabase
-        .from("users")
-        .update({
-            is_online: true,
-            last_active: new Date().toISOString(),
-        })
-        .eq("id", userData.id);
-
-    // Catat aktivitas login
-    await supabase.from("activity_logs").insert({
-        user_id: userData.id,
-        activity_type: "LOGIN",
-        description: "User login ke sistem",
-    });
-
-    return true;
-}
-
-
-/* =========================
-   ONLINE USERS
-========================= */
-export async function getOnlineUsers() {
-    const supabase = await getSupabase();
-    const { data } = await supabase
-        .from("users")
-        .select("username")
-        .eq("is_online", true);
-
-    return data || [];
-}
-
-export async function updateUserActivity() {
-    const supabase = await getSupabase();
-    const user = await getCurrentUser();
-    if (!user) return;
-
-    await supabase
-        .from("users")
-        .update({
-            last_active: new Date().toISOString(),
-            is_online: true,
-        })
-        .eq("id", user.id);
-}
-
-export function subscribeToOnlineUsers(callback) {
-    getSupabase().then((supabase) => {
-        supabase
-            .channel("online-users")
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "users" },
-                callback
-            )
-            .subscribe();
-    });
-}
-
-/* =========================
-   ACTIVITY LOGS
-========================= */
-export async function getActivityLogs(limit = 50) {
-    const supabase = await getSupabase();
-
-    const { data, error } = await supabase
-        .from("activity_logs")
-        .select(`
-            id,
-            activity_type,
-            description,
-            created_at,
-            users ( username )
-        `)
-        .order("created_at", { ascending: false })
-        .limit(limit);
-
-    if (error) throw error;
-    return data || [];
-}
-
-/* 🔴 INI YANG KEMARIN HILANG */
-export async function testActivityLogsAccess() {
     try {
-        const supabase = await getSupabase();
-        const { error } = await supabase
-            .from("activity_logs")
-            .select("id")
-            .limit(1);
-
-        if (error) {
-            return { success: false, error: error.message };
+        const userId = localStorage.getItem('userId');
+        if (userId) {
+            await logActivity(userId, 'LOGOUT', 'User logged out');
+            const client = await getSupabase();
+            await client.from('online_users').delete().eq('user_id', userId);
         }
-
-        return { success: true };
-    } catch (err) {
-        return { success: false, error: err.message };
+    } finally {
+        localStorage.clear();
+        window.location.href = '/login.html';
     }
 }
 
-export function subscribeToActivityLogs(callback) {
-    getSupabase().then((supabase) => {
-        supabase
-            .channel("activity-logs")
-            .on(
-                "postgres_changes",
-                { event: "INSERT", schema: "public", table: "activity_logs" },
-                (payload) => callback(payload.new)
-            )
-            .subscribe();
-    });
+// ===============================
+// ONLINE USERS
+// ===============================
+export async function markUserOnline(userId, username) {
+    try {
+        const client = await getSupabase();
+        const { data } = await client
+            .from('online_users')
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (data) {
+            await client
+                .from('online_users')
+                .update({ last_seen: new Date().toISOString() })
+                .eq('user_id', userId);
+        } else {
+            await client
+                .from('online_users')
+                .insert([{ user_id: userId, username, last_seen: new Date().toISOString() }]);
+        }
+    } catch (err) {
+        console.error(err);
+    }
 }
 
-export async function trackNavigation(menuName) {
-    const supabase = await getSupabase();
-    const user = await getCurrentUser();
-    if (!user) return;
+export async function getOnlineUsers() {
+    try {
+        const client = await getSupabase();
+        const since = new Date(Date.now() - 2 * 60 * 1000).toISOString();
 
-    await supabase.from("activity_logs").insert({
-        user_id: user.id,
-        activity_type: "NAVIGATION",
-        description: `Membuka menu ${menuName}`,
-    });
+        const { data } = await client
+            .from('online_users')
+            .select('*')
+            .gte('last_seen', since)
+            .order('username');
+
+        return data || [];
+    } catch {
+        return [];
+    }
+}
+
+// ===============================
+// ACTIVITY LOGS
+// ===============================
+export async function logActivity(userId, type, description, metadata = null) {
+    try {
+        const client = await getSupabase();
+        const { error } = await client
+            .from('activity_logs')
+            .insert([{
+                user_id: userId,
+                activity_type: type,
+                description,
+                metadata,
+                created_at: new Date().toISOString()
+            }]);
+
+        if (error) console.error(error);
+        return { success: !error };
+    } catch (err) {
+        console.error(err);
+        return { success: false };
+    }
+}
+
+export async function getActivityLogs(limit = 50) {
+    try {
+        const client = await getSupabase();
+        const { data } = await client
+            .from('activity_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+        return data || [];
+    } catch {
+        return [];
+    }
+}
+
+// ===============================
+// REALTIME
+// ===============================
+let onlineUsersSubscription = null;
+let activityLogsSubscription = null;
+
+export async function subscribeToOnlineUsers(cb) {
+    const client = await getSupabase();
+    if (onlineUsersSubscription) await client.removeChannel(onlineUsersSubscription);
+
+    onlineUsersSubscription = client
+        .channel('online_users_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'online_users' }, cb)
+        .subscribe();
+}
+
+export async function subscribeToActivityLogs(cb) {
+    const client = await getSupabase();
+    if (activityLogsSubscription) await client.removeChannel(activityLogsSubscription);
+
+    activityLogsSubscription = client
+        .channel('activity_logs_changes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_logs' },
+            payload => cb(payload.new))
+        .subscribe();
+}
+
+// ===============================
+// AUTH GUARD
+// ===============================
+export function isAuthenticated() {
+    return localStorage.getItem('userId') !== null;
+}
+
+export function requireAuth() {
+    if (!isAuthenticated()) {
+        window.location.href = '/login.html';
+    }
 }
